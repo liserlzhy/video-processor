@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # 当推送以 v 开头的标签时触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.20' # 指定 Go 版本
+
+      - name: Build for Windows
+        run: GOOS=windows GOARCH=amd64 go build -o video-processor.exe main.go
+
+      - name: Build for Linux
+        run: GOOS=linux GOARCH=amd64 go build -o video-processor-linux main.go
+
+      - name: Build for macOS
+        run: GOOS=darwin GOARCH=amd64 go build -o video-processor-macos main.go
+
+      - name: Package artifacts
+        run: |
+          zip video-processor-windows.zip video-processor.exe README.md
+          tar -czvf video-processor-linux.tar.gz video-processor-linux README.md
+          tar -czvf video-processor-macos.tar.gz video-processor-macos README.md
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: |
+            video-processor-windows.zip
+            video-processor-linux.tar.gz
+            video-processor-macos.tar.gz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            video-processor-windows.zip
+            video-processor-linux.tar.gz
+            video-processor-macos.tar.gz
